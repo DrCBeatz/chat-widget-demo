@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "tenant_id": "hospital-a",
+  "branding": {
+    "name": "Hospital A Chat Widget",
+    "logo_url": "https://dummyimage.com/80x32/0b6fb3/ffffff&text=Hospital A",
+    "base_color": "#00FF00"
+  },
+  "chatbot_api": {
+    "transport": "sse",
+    "stream_url": "https://api.example.com/chat/stream",
+    "resume_url": "https://api.example.com/chat/resume"
+  }
+}

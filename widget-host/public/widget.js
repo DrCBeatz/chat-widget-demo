@@ -114,8 +114,8 @@ class AqilaChat extends HTMLElement {
         *, *::before, *::after { box-sizing: border-box; }
         :host([floating]) {
           position: fixed;
-          right: 24px;
-          bottom: 24px;
+          right: max(16px, env(safe-area-inset-right));
+          bottom: max(16px, env(safe-area-inset-bottom));
           z-index: 2147483000; }
         :host([floating]) .widget {
           width: min(420px, calc(100vw - 32px));

@@ -186,9 +186,32 @@ class AqilaChat extends HTMLElement {
     this.state.messages.push({ role: 'user', text });
     this._render();
     this._setStatus('Thinking…');
-    // Fake streaming to demonstrate UX; swap this with real backend later
-    await this._fakeStreamResponse(text);
-    this._setStatus('');
+
+    const api = this.state?.cfg?.chatbot_api || {};
+    const base = api.base_url || '';
+    const urlChat   = base ? `${base}/api/chat`        : '/api/chat';
+    const urlStream = base ? `${base}/api/chat/stream` : '/api/chat/stream';
+
+    try {
+      if ((api.transport || '').toLowerCase() === 'sse') {
+        await this._streamResponse(urlStream, text);
+      } else {
+        const resp = await fetch(urlChat, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ prompt: text, conversation_id: this.state.convId, tenant_id: this.tenant })
+        });
+        if (!resp.ok) throw new Error('backend error');
+        const data = await resp.json();
+        this.state.messages.push({ role: 'assistant', text: data?.text || '(no reply)' });
+        this._render();
+      }
+    } catch (e) {
+      console.warn('Backend unavailable; falling back to fake stream', e);
+      await this._fakeStreamResponse(text);
+    } finally {
+      this._setStatus('');
+    }
   }
 
   async _fakeStreamResponse(userText) {
@@ -204,11 +227,53 @@ class AqilaChat extends HTMLElement {
     }
   }
 
+  async _streamResponse(url, prompt) {
+    // create the empty assistant message up front
+    const msg = { role: 'assistant', text: '' };
+    this.state.messages.push(msg);
+    this._render();
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    if (!resp.ok || !resp.body) throw new Error('stream failed');
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // parse "data: ...\n\n" events
+      let sep;
+      while ((sep = buffer.indexOf('\n\n')) >= 0) {
+        const raw = buffer.slice(0, sep).trim();   // e.g., "data: \"foo\"" or "event: done"
+        buffer = buffer.slice(sep + 2);
+
+        if (!raw) continue;
+        if (raw.startsWith('event: done')) return;
+
+        if (raw.startsWith('data:')) {
+          const payload = raw.slice(5).trim();
+          // we sent JSON-stringified tokens; try to parse, else append as-is
+          try { msg.text += JSON.parse(payload); } catch { msg.text += payload; }
+          this._render();
+        }
+      }
+    }
+  }
+
   _announce(text) {
     const sr = this._q('.sr-live');
     sr.textContent = text;
   }
 }
+
 if (!customElements.get('aqila-chat')) {
   customElements.define('aqila-chat', AqilaChat);
 }

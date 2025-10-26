@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
-  "tenant_id": "hospital-a",
+  "tenant_id": "hospital-b",
   "branding": {
-    "name": "Hospital A Chat Widget",
-    "logo_url": "https://dummyimage.com/80x32/0b6fb3/ffffff&text=Hospital A",
-    "base_color": "#0B6FB3" 
+    "name": "Hospital B Chat Widget",
+    "logo_url": "https://dummyimage.com/80x32/ff0000/ffffff&text=Hospital B",
+    "base_color": "#FF0000" 
   },
   "chatbot_api": {
     "transport": "sse",

@@ -1,8 +1,13 @@
-// widget-host/public/widget.js
+// public/widget.js
 
-// Minimal utilities
-const uid = () => ([1e7]+-1e3+-4e3+-8e3+-1e11)
-  .replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+// --- Small helpers ----------------------------------------------------------
+const uid = () =>
+  ([1e7] + -1e3 + -4e3 + -8e3 + -1e11)
+    .replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> (c / 4)).toString(16)
+    );
+
+// ---------------------------------------------------------------------------
 
 class AqilaChat extends HTMLElement {
   static get observedAttributes() { return ['tenant']; }
@@ -13,22 +18,9 @@ class AqilaChat extends HTMLElement {
     this.state = {
       cfg: null,
       convId: null,
-      messages: [], // {role:'user'|'assistant', text:string}
+      messages: [],      // { role: 'user'|'assistant', text: string }
       collapsed: false
     };
-  }
-
-  _toggle() {
-    this.state.collapsed = !this.state.collapsed;
-    const w = this._q('.widget');
-    const hdr = this._q('#hdr');
-    if (this.state.collapsed) {
-        w.classList.add('collapsed');
-        hdr.setAttribute('aria-expanded', 'false');
-    } else {
-        w.classList.remove('collapsed');
-        hdr.setAttribute('aria-expanded', 'true');
-    }
   }
 
   connectedCallback() {
@@ -37,7 +29,7 @@ class AqilaChat extends HTMLElement {
 
     if (this.hasAttribute('floating')) {
       this.state.collapsed = true;
-      this._q('#hdr').setAttribute('aria-expanded','false');
+      this._q('#hdr').setAttribute('aria-expanded', 'false');
       this._q('.widget').classList.add('collapsed');
     }
 
@@ -50,6 +42,21 @@ class AqilaChat extends HTMLElement {
 
   get tenant() { return this.getAttribute('tenant'); }
 
+  _q(sel) { return this.shadowRoot.querySelector(sel); }
+
+  _toggle() {
+    this.state.collapsed = !this.state.collapsed;
+    const w = this._q('.widget');
+    const hdr = this._q('#hdr');
+    if (this.state.collapsed) {
+      w.classList.add('collapsed');
+      hdr.setAttribute('aria-expanded', 'false');
+    } else {
+      w.classList.remove('collapsed');
+      hdr.setAttribute('aria-expanded', 'true');
+    }
+  }
+
   _ensureConvId() {
     const key = `aqila:${this.tenant || 'default'}:conversation_id`;
     let id = localStorage.getItem(key);
@@ -59,12 +66,18 @@ class AqilaChat extends HTMLElement {
 
   async _loadConfig() {
     if (!this.tenant) return;
-    const url = `./tenants/${this.tenant}/current/config.json`; // in prod: CDN URL
     try {
+      // Resolve config path relative to THIS script (works on any host)
+      const base = new URL('.', import.meta.url);
+      const url = new URL(`tenants/${this.tenant}/current/config.json`, base).toString();
+
       const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`config ${res.status}`);
       this.state.cfg = await res.json();
+
       this._applyTheme();
       this._render();
+      this._maybeGreet();
     } catch (e) {
       console.error('Config load failed', e);
       this._setStatus('Failed to load tenant config');
@@ -76,88 +89,107 @@ class AqilaChat extends HTMLElement {
     this.shadowRoot.host.style.setProperty('--brand', color);
   }
 
+  _maybeGreet() {
+    const greet = this.state?.cfg?.ui?.initial_greeting;
+    if (!greet) return;
+    const k = `aqila:${this.tenant}:greeted:${this.state.convId}`;
+    if (!localStorage.getItem(k)) {
+      this.state.messages.push({ role: 'assistant', text: greet });
+      localStorage.setItem(k, '1');
+      this._render();
+    }
+  }
+
+  _buildContextText() {
+    const c = this.state?.cfg?.context; if (!c) return '';
+    const parts = [];
+    if (c.hours)     parts.push(`HOURS: ${c.hours}`);
+    if (c.parking)   parts.push(`PARKING: ${c.parking}`);
+    if (c.locations) parts.push(`LOCATIONS: ${c.locations}`);
+    if (Array.isArray(c.policies)) {
+      for (const p of c.policies) parts.push(`POLICY[${p.id}] ${p.title}: ${p.text}`);
+    }
+    if (Array.isArray(c.faq)) {
+      for (const f of c.faq) parts.push(`FAQ Q: ${f.q}\nFAQ A: ${f.a}`);
+    }
+    return parts.join('\n---\n');
+  }
+
   _renderSkeleton() {
     this.shadowRoot.innerHTML = `
-       <style>
-        :host { --brand:#1f6feb; display:inline-block; color-scheme: light; 
-              font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+      <style>
+        :host { --brand:#1f6feb; display:inline-block; color-scheme: light;
+                font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
         textarea, input, select, button { -webkit-appearance: none; appearance: none; }
+        *, *::before, *::after { box-sizing: border-box; }
+
         .widget { width: 360px; border:1px solid #ccc; border-radius:12px; overflow:hidden;
-                box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-        /* Make header a real button */
-        .hdr {
-        background: var(--brand); color:#fff; padding:12px; display:flex; align-items:center; gap:10px;
-        width:100%; border:0; cursor:pointer; text-align:left;
-        }
+                  box-shadow: 0 8px 24px rgba(0,0,0,.08); transition: transform .18s ease, opacity .18s ease; }
+        .hdr { background: var(--brand); color:#fff; padding:12px; display:flex; align-items:center; gap:10px;
+               width:100%; border:0; cursor:pointer; text-align:left; }
         .hdr img { height:24px; }
         .hdr .name { font-weight:600; font-size:14px; }
         .body { background:#fff; display:flex; flex-direction:column; height:420px; }
         .widget.collapsed .body { display:none; }
         .widget.collapsed .hdr { border-bottom-left-radius:12px; border-bottom-right-radius:12px; }
+
         .transcript { flex:1; padding:12px; overflow:auto; }
         .msg { margin-bottom:10px; }
         .msg.user { text-align:right; }
-        .msg .bubble { display:inline-block; padding:10px 12px; border-radius: 14px; max-width: 85%; }
+        .msg .bubble { display:inline-block; padding:10px 12px; border-radius:14px; max-width:85%; }
         .user .bubble { background:#e6f2ff; color:#003366; }
         .assistant .bubble { background:#f5f5f5; color:#222; }
+
         .composer { border-top:1px solid #eee; padding:8px; display:flex; gap:8px; }
         textarea { flex:1; resize:none; min-height:44px; max-height:120px; font:inherit; padding:10px;
-                   border:1px solid #ddd; border-radius:10px; outline:none; background-color: #fff;
-                   color: #111; border: 1px solid #ddd;}
+                   border:1px solid #ddd; border-radius:10px; outline:none; background:#fff; color:#111; }
         button { background: var(--brand); color:#fff; border:none; padding:0 16px; border-radius:10px; font-weight:600; }
         button[disabled]{ opacity:.6 }
         .status { font-size:12px; color:#666; padding:6px 12px; }
-        /* Accessibility focus */
-        button:focus, textarea:focus { outline: 3px solid rgba(0,0,0,.35); outline-offset:2px; }
-        /* Live region for SR */
-        .sr-live { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
-        *, *::before, *::after { box-sizing: border-box; }
-        :host([floating]) {
-          position: fixed;
-          right: max(16px, env(safe-area-inset-right));
-          bottom: max(16px, env(safe-area-inset-bottom));
-          z-index: 2147483000; }
-        :host([floating]) .widget {
-          width: min(420px, calc(100vw - 32px));
-        }
-        @media (max-width: 520px) {
-          :host([floating]) .widget {
-            width: min(100vw - 16px, 420px);
-          }
-        }
-        :host([floating]) .body {
-          height: min(60vh, 520px);
-        }
-        .widget { transition: transform .18s ease, opacity .18s ease; }
 
+        button:focus, textarea:focus { outline: 3px solid rgba(0,0,0,.35); outline-offset:2px; }
+
+        .sr-live { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+
+        :host([floating]) { position: fixed; right: max(16px, env(safe-area-inset-right));
+                            bottom: max(16px, env(safe-area-inset-bottom)); z-index: 2147483000; }
+        :host([floating]) .widget { width: min(420px, calc(100vw - 32px)); }
+        :host([floating]) .body { height: min(60vh, 520px); }
+
+        @media (max-width: 520px) {
+          :host([floating]) .widget { width: min(100vw - 16px, 420px); }
+        }
       </style>
+
       <div class="widget" role="complementary" aria-label="Hospital chat">
         <button class="hdr" id="hdr" type="button" aria-expanded="true" aria-controls="panel">
-        <img alt="" />
-        <div class="name">Chat</div>
+          <img alt="" />
+          <div class="name">Chat</div>
         </button>
+
         <div class="body" id="panel">
-        <div class="transcript" role="log" aria-live="polite" aria-relevant="additions"></div>
-        <div class="status" aria-live="polite"></div>
-        <div class="composer">
+          <div class="transcript" role="log" aria-live="polite" aria-relevant="additions"></div>
+          <div class="status" aria-live="polite"></div>
+          <div class="composer">
             <textarea aria-label="Message. Press Enter to send, Shift+Enter for new line"></textarea>
             <button type="button">Send</button>
+          </div>
         </div>
-        </div>
-        <div class="sr-live" aria-live="polite"></div>
-    </div>
-    `;
-    const ta = this._q('textarea');
-    const sendBtn = this._q('.composer button');
-    const hdrBtn  = this._q('#hdr');
-    ta.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._send(); }
-    });
-    sendBtn.addEventListener('click', () => this._send());
-    hdrBtn.addEventListener('click', () => this._toggle());
-  }
 
-  _q(sel) { return this.shadowRoot.querySelector(sel); }
+        <div class="sr-live" aria-live="polite"></div>
+      </div>
+    `;
+
+    const ta   = this._q('textarea');
+    const send = this._q('.composer button');
+    const hdr  = this._q('#hdr');
+
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this._send(); }
+    });
+    send.addEventListener('click', () => this._send());
+    hdr.addEventListener('click',  () => this._toggle());
+  }
 
   _render() {
     const name = this.state?.cfg?.branding?.name || 'Chat';
@@ -183,23 +215,32 @@ class AqilaChat extends HTMLElement {
     const text = ta.value.trim();
     if (!text) return;
     ta.value = '';
+
     this.state.messages.push({ role: 'user', text });
     this._render();
     this._setStatus('Thinking…');
 
-    const api = this.state?.cfg?.chatbot_api || {};
-    const base = api.base_url || '';
-    const urlChat   = base ? `${base}/api/chat`        : '/api/chat';
-    const urlStream = base ? `${base}/api/chat/stream` : '/api/chat/stream';
+    const api     = this.state?.cfg?.chatbot_api || {};
+    const base    = api.base_url || ''; // '' → use relative /api (Vite proxy)
+    const urlChat = base ? `${base}/api/chat` : '/api/chat';
+    const urlSSE  = base ? `${base}/api/chat/stream` : '/api/chat/stream';
+
+    const system  = this.state?.cfg?.prompt?.system || '';
+    const context = this._buildContextText();
 
     try {
       if ((api.transport || '').toLowerCase() === 'sse') {
-        await this._streamResponse(urlStream, text);
+        await this._streamResponse(urlSSE, { prompt: text, system, context });
       } else {
         const resp = await fetch(urlChat, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ prompt: text, conversation_id: this.state.convId, tenant_id: this.tenant })
+          body: JSON.stringify({
+            prompt: text,
+            conversation_id: this.state.convId,
+            tenant_id: this.tenant,
+            system, context
+          })
         });
         if (!resp.ok) throw new Error('backend error');
         const data = await resp.json();
@@ -223,12 +264,11 @@ class AqilaChat extends HTMLElement {
       await new Promise(r => setTimeout(r, 60));
       msg.text += c;
       this._render();
-      this._announce(c); // SR live updates with debounce would be nicer
+      this._announce(c);
     }
   }
 
-  async _streamResponse(url, prompt) {
-    // create the empty assistant message up front
+  async _streamResponse(url, payload) {
     const msg = { role: 'assistant', text: '' };
     this.state.messages.push(msg);
     this._render();
@@ -236,7 +276,7 @@ class AqilaChat extends HTMLElement {
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt })
+      body: JSON.stringify(payload)
     });
     if (!resp.ok || !resp.body) throw new Error('stream failed');
 
@@ -249,19 +289,18 @@ class AqilaChat extends HTMLElement {
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
 
-      // parse "data: ...\n\n" events
       let sep;
       while ((sep = buffer.indexOf('\n\n')) >= 0) {
-        const raw = buffer.slice(0, sep).trim();   // e.g., "data: \"foo\"" or "event: done"
+        const raw = buffer.slice(0, sep).trim(); // "data: ..." or "event: done"
         buffer = buffer.slice(sep + 2);
-
         if (!raw) continue;
+
         if (raw.startsWith('event: done')) return;
+        if (raw.startsWith('event: error')) { throw new Error('server sent error'); }
 
         if (raw.startsWith('data:')) {
-          const payload = raw.slice(5).trim();
-          // we sent JSON-stringified tokens; try to parse, else append as-is
-          try { msg.text += JSON.parse(payload); } catch { msg.text += payload; }
+          const token = raw.slice(5).trim();
+          try { msg.text += JSON.parse(token); } catch { msg.text += token; }
           this._render();
         }
       }
@@ -274,6 +313,7 @@ class AqilaChat extends HTMLElement {
   }
 }
 
+// Prevent duplicate definitions during HMR
 if (!customElements.get('aqila-chat')) {
   customElements.define('aqila-chat', AqilaChat);
 }

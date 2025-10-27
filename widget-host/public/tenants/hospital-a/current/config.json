@@ -4,12 +4,27 @@
   "branding": {
     "name": "Hospital A Chat Widget",
     "logo_url": "https://dummyimage.com/80x32/0b6fb3/ffffff&text=Hospital A",
-    "base_color": "#0B6FB3" 
+    "base_color": "#0B6FB3"
+  },
+  "ui": {
+    "initial_greeting": "Hi! I’m the Hospital A assistant. Ask me about visiting hours, parking, or policies."
+  },
+  "context": {
+    "hours": "Visiting 10am–8pm daily. ICU: 2 visitors at a time, 10am–7pm. ER 24/7.",
+    "parking": "Garage B (first hour free, then $3/hr, daily max $12). Parking office Level 1.",
+    "locations": "Main entrance at 123 Health Ave. Clinics in Building C, Levels 2–4.",
+    "policies": [
+      { "id": "mask-2025-04", "title": "Mask Policy", "text": "Masks recommended; required in oncology & ICU." }
+    ],
+    "faq": [
+      { "q": "What are visiting hours?", "a": "10am–8pm; ICU special limits (2 visitors, 10am–7pm)." }
+    ]
+  },
+  "prompt": {
+    "system": "You are a patient‑facing hospital assistant. Use ONLY the provided context. If a question is outside the context, say you don’t know and suggest contacting the hospital. Be brief and accurate; cite policy IDs when relevant."
   },
   "chatbot_api": {
     "transport": "sse",
-    "stream_url": "https://api.example.com/chat/stream",
-    "resume_url": "https://api.example.com/chat/resume",
     "base_url": ""
   }
 }

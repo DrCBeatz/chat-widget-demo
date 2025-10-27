@@ -2,14 +2,31 @@
   "schema_version": "1.0",
   "tenant_id": "hospital-b",
   "branding": {
-    "name": "Hospital B Chat Widget",
+    "name": "Hospital b Chat Widget",
     "logo_url": "https://dummyimage.com/80x32/ff0000/ffffff&text=Hospital B",
-    "base_color": "#FF0000" 
+    "base_color": "#FF0000"
+  },
+  "ui": {
+    "initial_greeting": "Hi! I’m the Hospital B assistant. Ask me about visiting hours, parking, or patient policies."
+  },
+  "context": {
+    "hours": "Visiting 10am–8pm daily. ICU: 2 visitors at a time, 10am–7pm. ER 24/7.",
+    "parking": "Garage B (first hour free, then $3/hr, daily max $12). Parking office Level 1.",
+    "locations": "Main entrance at 123 Health Ave. Clinics in Building C, Levels 2–4.",
+    "policies": [
+      {"id": "mask-2025-04", "title": "Mask Policy", "text": "Masks recommended, required in oncology and ICU."},
+      {"id": "photo-2024-11", "title": "Photography", "text": "No photography in patient care areas without consent."}
+    ],
+    "faq": [
+      {"q": "What are visiting hours?", "a": "10am–8pm daily. ICU has special limits (2 visitors, 10am–7pm)."},
+      {"q": "Where do I park?", "a": "Use Garage B (first hour free). Accessible spots near elevators."}
+    ]
+  },
+  "prompt": {
+    "system": "You are a patient‑facing hospital assistant. Use ONLY the provided context. If a question is outside the context, say you don’t know and suggest contacting the hospital. Be brief, accurate, and cite policy IDs when relevant (e.g., [mask-2025-04])."
   },
   "chatbot_api": {
     "transport": "sse",
-    "stream_url": "https://api.example.com/chat/stream",
-    "resume_url": "https://api.example.com/chat/resume",
     "base_url": ""
   }
 }

@@ -7,24 +7,90 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script type="module" src="./widget.js"></script>
   <style>
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
-    header{background:#0B6FB3;color:#fff;padding:14px 20px;font-weight:700;}
-    nav{background:#084f83;color:#cfe8ff;padding:8px 20px}
-    main{padding:24px;max-width:1000px;margin:auto;line-height:1.6}
-    .hero{background:#f5fbff;border:1px solid #e4f2ff;padding:18px;border-radius:10px;margin:20px 0}
-    footer{background:#f5f5f5;color:#444;padding:16px 20px;text-align:center;margin-top:40px}
+    :root {
+      --brand: #0B6FB3;
+      --brand-dark: #084f83;
+      --bg: #ffffff;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --card: #f8fafc;
+      --ring: 0 0 0 3px rgba(11,111,179,.25);
+    }
+    * { box-sizing: border-box }
+    html,body { height:100% }
+    body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--ink); background:var(--bg); }
+    header{ background:var(--brand); color:#fff; }
+    .topbar{ max-width:1100px; margin:0 auto; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+    .brand{ font-weight:800; letter-spacing:.2px }
+    nav{ background:var(--brand-dark); color:#cfe8ff }
+    .navwrap{ max-width:1100px; margin:0 auto; padding:8px 20px; display:flex; gap:16px; flex-wrap:wrap }
+    main{ max-width:1100px; margin:0 auto; padding:24px 20px; line-height:1.6 }
+    .hero{ background:#f1f8ff; border:1px solid #e3f0ff; padding:18px; border-radius:12px; display:flex; gap:16px; align-items:center }
+    .hero b{ color:#0b6fb3 }
+    .grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; margin-top:20px }
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr 1fr } }
+    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr } }
+    .card{ background:var(--card); border:1px solid #e5e7eb; border-radius:12px; padding:16px; }
+    .card h3{ margin:0 0 8px 0; font-size:18px }
+    .muted{ color:var(--muted) }
+    table { width:100%; border-collapse: collapse; margin-top:8px }
+    td, th { padding:8px 10px; border-bottom:1px solid #e5e7eb; text-align:left }
+    .cta { margin-top:22px; display:flex; gap:10px; flex-wrap:wrap }
+    .btn { background:#0B6FB3; color:#fff; border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600 }
+    .btn.secondary{ background:#e5f3ff; color:#084f83 }
+    .btn:focus{ outline: var(--ring) }
+    footer{ background:#f5f5f5; color:#444; padding:16px 20px; text-align:center; margin-top:40px }
   </style>
 </head>
 <body>
-  <header>City General Hospital</header>
-  <nav>Patients · Visitors · Clinics · Billing · Contact</nav>
-  <main>
-    <h1>Welcome to City General</h1>
-    <div class="hero">
-      <p>Find visiting hours, wayfinding, clinics, and policy information. Use the chat at the bottom-right if you need help.</p>
+  <header>
+    <div class="topbar">
+      <div class="brand">City General Hospital</div>
+      <div>123 Health Ave · (555) 010‑1234</div>
     </div>
-    <p>…placeholder content…</p>
+  </header>
+  <nav>
+    <div class="navwrap">Patients · Visitors · Clinics · Billing · Contact</div>
+  </nav>
+
+  <main>
+    <div class="hero">
+      <div>💬 <b>Need help?</b> Use the chat at the bottom‑right for visiting hours, parking, or policy info.</div>
+      <div class="cta">
+        <button class="btn">Book an appointment</button>
+        <button class="btn secondary">Find a clinic</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Visiting Hours</h3>
+        <table>
+          <tr><th>General</th><td>10:00 am – 8:00 pm (daily)</td></tr>
+          <tr><th>ICU</th><td>10:00 am – 7:00 pm, 2 visitors at a time</td></tr>
+          <tr><th>ER</th><td>Open 24/7</td></tr>
+        </table>
+        <div class="muted">Policies may change—check with the unit before visiting.</div>
+      </div>
+
+      <div class="card">
+        <h3>Parking & Directions</h3>
+        <p>Garage B (first hour free, then $3/hr, daily max $12). Accessible parking near elevators.</p>
+        <p><a href="#" class="muted">View campus map</a></p>
+      </div>
+
+      <div class="card">
+        <h3>Key Policies</h3>
+        <ul>
+          <li>Masks recommended; required in oncology & ICU.</li>
+          <li>No photography in patient care areas without consent.</li>
+        </ul>
+        <div class="muted">Ask the chat for details (e.g., “What’s the mask policy?”).</div>
+      </div>
+    </div>
   </main>
+
+  <!-- Floating widget (bottom-right) -->
   <aqila-chat floating tenant="hospital-a"></aqila-chat>
 
   <footer>&copy; 2025 City General Hospital</footer>

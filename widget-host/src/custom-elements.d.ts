@@ -1,17 +1,17 @@
 // src/custom-elements.d.ts
-export {};
-import type * as React from 'react';
+import 'react';
 
-declare global {
+declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
       'aqila-chat': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>, HTMLElement
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
       > & {
         tenant?: string;
+        floating?: '' | undefined;
         'cdn-base'?: string;
         'config-version'?: string;
-        floating?: '' | 'true' | 'false';
       };
     }
   }

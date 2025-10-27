@@ -13,5 +13,9 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.917.0",
     "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2"
   }
 }

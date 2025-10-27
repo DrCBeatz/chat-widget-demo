@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "tenant_id": "hospital-b",
   "branding": {
-    "name": "Hospital b Chat Widget",
+    "name": "Hospital B Chat Widget",
     "logo_url": "https://dummyimage.com/80x32/ff0000/ffffff&text=Hospital B",
     "base_color": "#FF0000"
   },
